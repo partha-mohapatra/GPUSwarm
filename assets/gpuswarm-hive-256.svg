@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="o3-256" width="256" height="256" viewBox="0 0 256 256" fill="none">
+      <defs>
+        <radialGradient id="bg3-256" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#f7c948" stop-opacity=".12"/>
+          <stop offset="100%" stop-color="#f7c948" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="256" height="256" rx="48" fill="#0f0c04"/>
+      <ellipse cx="128" cy="128" rx="110" ry="115" fill="url(#bg3-256)"/>
+      <!-- Centre amber R=37 -->
+      <polygon points="128,91 160,109 160,146 128,165 96,146 96,109" fill="#f7c948" stroke="#f7c948" stroke-width="3" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="128" cy="128" r="10" fill="#f7c948"/>
+      <!-- Top orange -->
+      <polygon points="128,17 160,35 160,72 128,91 96,72 96,35" fill="#ff6b2b" stroke="#ff6b2b" stroke-width="2.5" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="128" cy="54" r="8" fill="#ff6b2b"/>
+      <!-- TopRight amber -->
+      <polygon points="192,54 224,72 224,109 192,128 160,109 160,72" fill="#f7c948" stroke="#f7c948" stroke-width="2.5" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="192" cy="91" r="8" fill="#f7c948"/>
+      <!-- BotRight orange -->
+      <polygon points="192,128 224,146 224,183 192,202 160,183 160,146" fill="#ff6b2b" stroke="#ff6b2b" stroke-width="2.5" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="192" cy="165" r="8" fill="#ff6b2b"/>
+      <!-- Bottom amber -->
+      <polygon points="128,165 160,183 160,220 128,239 96,220 96,183" fill="#f7c948" stroke="#f7c948" stroke-width="2.5" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="128" cy="202" r="8" fill="#f7c948"/>
+      <!-- BotLeft orange -->
+      <polygon points="64,128 96,146 96,183 64,202 32,183 32,146" fill="#ff6b2b" stroke="#ff6b2b" stroke-width="2" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="64" cy="165" r="6" fill="#ff6b2b"/>
+      <!-- TopLeft amber -->
+      <polygon points="64,54 96,72 96,109 64,128 32,109 32,72" fill="#f7c948" stroke="#f7c948" stroke-width="2" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="64" cy="91" r="6" fill="#f7c948"/>
+    </svg>
