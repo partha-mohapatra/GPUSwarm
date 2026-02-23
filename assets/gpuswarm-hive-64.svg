@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="o3-64" width="64" height="64" viewBox="0 0 64 64" fill="none">
+      <rect width="64" height="64" rx="14" fill="#0f0c04"/>
+      <!-- Centre amber R=9 -->
+      <polygon points="32,23 40,28 40,37 32,41 24,37 24,28" fill="#f7c948" stroke="#f7c948" stroke-width="1.8" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="32" cy="32" r="3.5" fill="#f7c948"/>
+      <!-- Top orange -->
+      <polygon points="32,5 40,10 40,19 32,23 24,19 24,10" fill="#ff6b2b" stroke="#ff6b2b" stroke-width="1.4" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="32" cy="14" r="2.5" fill="#ff6b2b"/>
+      <!-- TopRight amber -->
+      <polygon points="48,14 56,19 56,28 48,32 40,28 40,19" fill="#f7c948" stroke="#f7c948" stroke-width="1.4" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="48" cy="23" r="2.5" fill="#f7c948"/>
+      <!-- BotRight orange -->
+      <polygon points="48,32 56,37 56,46 48,50 40,46 40,37" fill="#ff6b2b" stroke="#ff6b2b" stroke-width="1.4" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="48" cy="41" r="2.5" fill="#ff6b2b"/>
+      <!-- Bottom amber -->
+      <polygon points="32,41 40,46 40,55 32,59 24,55 24,46" fill="#f7c948" stroke="#f7c948" stroke-width="1.4" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="32" cy="50" r="2.5" fill="#f7c948"/>
+      <!-- BotLeft orange -->
+      <polygon points="16,32 24,37 24,46 16,50 8,46 8,37" fill="#ff6b2b" stroke="#ff6b2b" stroke-width="1" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="16" cy="41" r="2" fill="#ff6b2b"/>
+      <!-- TopLeft amber -->
+      <polygon points="16,14 24,19 24,28 16,32 8,28 8,19" fill="#f7c948" stroke="#f7c948" stroke-width="1" fill-opacity="0.35" stroke-opacity="0.9"/>
+      <circle cx="16" cy="23" r="2" fill="#f7c948"/>
+    </svg>

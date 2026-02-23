@@ -1,0 +1,17 @@
+[Unit]
+Description=infermeshAI daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=infermesh
+Group=infermesh
+WorkingDirectory=/opt/infermeshai
+ExecStart=/opt/infermeshai/infermeshd-linux-amd64 -config /etc/infermeshai/config.yaml
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target
