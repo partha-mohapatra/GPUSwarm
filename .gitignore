@@ -1,0 +1,14 @@
+# Local runtime artifacts
+infermeshd.identity.pem
+*.log
+
+# Build outputs
+dist/
+
+# Local AWS deployment secrets/overrides
+deploy/aws/bootstrap.env
+deploy/aws/keys/
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db

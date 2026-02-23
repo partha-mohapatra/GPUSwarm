@@ -1,0 +1,349 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: infermeshAI bootstrap node on AWS EC2 with optional VPC/Subnet/KeyPair creation
+
+Parameters:
+  VpcId:
+    Type: String
+    Default: ''
+    Description: Optional existing VPC ID. Leave empty to create a new VPC.
+
+  SubnetId:
+    Type: String
+    Default: ''
+    Description: Optional existing subnet ID. Leave empty to create a subnet.
+
+  ExistingKeyName:
+    Type: String
+    Default: ''
+    Description: Optional existing EC2 KeyPair name. Leave empty to create a new KeyPair.
+
+  KeyPairName:
+    Type: String
+    Default: infermesh-bootstrap-key
+    Description: Name for created KeyPair when ExistingKeyName is empty.
+
+  VpcCidr:
+    Type: String
+    Default: 10.44.0.0/16
+    Description: CIDR for created VPC (if VpcId not provided)
+
+  SubnetCidr:
+    Type: String
+    Default: 10.44.1.0/24
+    Description: CIDR for created subnet (if SubnetId not provided)
+
+  SubnetAvailabilityZone:
+    Type: String
+    Default: ''
+    Description: Optional AZ for created subnet (recommended to match instance type availability)
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+    Description: EC2 instance type
+
+  AmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    Description: AMI ID (default uses latest Amazon Linux 2023 x86_64)
+
+  AllowedSshCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: Initial SSH CIDR (use script to narrow to current IP)
+
+  Libp2pPort:
+    Type: Number
+    Default: 39001
+    MinValue: 1
+    MaxValue: 65535
+    Description: Public libp2p TCP port
+
+  Rendezvous:
+    Type: String
+    Default: infermesh-rendezvous
+    Description: libp2p rendezvous namespace
+
+  InfermeshdDownloadUrl:
+    Type: String
+    Description: Direct HTTPS URL to infermeshd-linux-amd64 binary
+
+  BootstrapPeers:
+    Type: String
+    Default: ''
+    Description: Optional comma-separated bootstrap peer multiaddrs
+
+Conditions:
+  CreateVpc: !Equals [!Ref VpcId, '']
+  CreateSubnet: !Equals [!Ref SubnetId, '']
+  CreateKeyPair: !Equals [!Ref ExistingKeyName, '']
+  HasSubnetAz: !Not [!Equals [!Ref SubnetAvailabilityZone, '']]
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Condition: CreateVpc
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: infermesh-bootstrap-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Condition: CreateVpc
+    Properties:
+      Tags:
+        - Key: Name
+          Value: infermesh-bootstrap-igw
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Condition: CreateSubnet
+    Properties:
+      VpcId: !If [CreateVpc, !Ref Vpc, !Ref VpcId]
+      CidrBlock: !Ref SubnetCidr
+      AvailabilityZone: !If [HasSubnetAz, !Ref SubnetAvailabilityZone, !Ref "AWS::NoValue"]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: infermesh-bootstrap-subnet
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref Vpc
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    Condition: CreateVpc
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
+    Properties:
+      SubnetId: !If [CreateSubnet, !Ref Subnet, !Ref SubnetId]
+      RouteTableId: !Ref RouteTable
+
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Condition: CreateKeyPair
+    Properties:
+      KeyName: !Ref KeyPairName
+
+  InfermeshSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: infermeshAI bootstrap security group
+      VpcId: !If [CreateVpc, !Ref Vpc, !Ref VpcId]
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedSshCidr
+        - IpProtocol: tcp
+          FromPort: !Ref Libp2pPort
+          ToPort: !Ref Libp2pPort
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  InfermeshRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  InfermeshInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InfermeshRole
+
+  InfermeshInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      SubnetId: !If [CreateSubnet, !Ref Subnet, !Ref SubnetId]
+      IamInstanceProfile: !Ref InfermeshInstanceProfile
+      KeyName: !If [CreateKeyPair, !Ref KeyPair, !Ref ExistingKeyName]
+      SecurityGroupIds:
+        - !Ref InfermeshSecurityGroup
+      Tags:
+        - Key: Name
+          Value: infermesh-bootstrap
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euxo pipefail
+
+          dnf update -y
+          dnf install -y ca-certificates
+
+          useradd -r -m -d /var/lib/infermeshai -s /sbin/nologin infermesh || true
+          mkdir -p /opt/infermeshai /etc/infermeshai /var/lib/infermeshai /var/log/infermeshai
+          chown -R infermesh:infermesh /var/lib/infermeshai /var/log/infermeshai
+
+          curl -fL --retry 5 --retry-delay 2 -o /opt/infermeshai/infermeshd-linux-amd64 "${InfermeshdDownloadUrl}"
+          chmod +x /opt/infermeshai/infermeshd-linux-amd64
+
+          cat > /etc/infermeshai/config.yaml <<CFG
+          mode: client
+          transport: libp2p
+          client_name: aws-bootstrap
+          provider_name: aws-bootstrap
+          identity_file: /var/lib/infermeshai/infermeshd.identity.pem
+          client_addr: :5555
+          provider_addr: :7777
+          provider_peer_urls: []
+          backend_kind: openai
+          backend_url: http://127.0.0.1:9000
+          peer_id: ""
+          gpu: bootstrap-node
+          vram_free_mb: 0
+          models: []
+          model_specs: []
+          advertise_url: ""
+          max_inflight: 1
+          rate_per_second: 10
+          burst: 10
+          max_tokens_per_request: 0
+          night_only: false
+          night_start_hour: 22
+          night_end_hour: 6
+          idle_only: false
+          max_load1m: 2
+          pow_difficulty: 0
+          min_peer_reputation: 0
+          initial_credits: 0
+          routing_policy: auto
+          favorite_peers: []
+          blocked_peers: []
+          allowed_peers: []
+          sticky_peer_ttl: 0s
+          weight_latency: 1
+          weight_queue_depth: 2
+          weight_vram_pressure: 500
+          weight_reliability: 100
+          weight_favorite_bonus: 10
+          weight_known_bonus: 3
+          lan_discovery: false
+          lan_listen_addr: :9559
+          lan_broadcast_addr: 255.255.255.255:9559
+          lan_announce_interval: 3s
+          lan_peer_ttl: 15s
+          libp2p_listen_addrs:
+            - /ip4/0.0.0.0/tcp/${Libp2pPort}
+          libp2p_bootstrap_peers:
+          CFG
+
+          if [ -n "${BootstrapPeers}" ]; then
+            IFS=',' read -ra PEERS <<< "${BootstrapPeers}"
+            for p in "${!PEERS[@]}"; do
+              p_trimmed="$(echo "$p" | xargs)"
+              if [ -n "$p_trimmed" ]; then
+                echo "  - $p_trimmed" >> /etc/infermeshai/config.yaml
+              fi
+            done
+          else
+            echo "  []" >> /etc/infermeshai/config.yaml
+          fi
+
+          cat >> /etc/infermeshai/config.yaml <<CFG2
+          libp2p_rendezvous: ${Rendezvous}
+          libp2p_auto_relay: true
+          libp2p_relay_service: true
+          libp2p_nat_port_map: true
+          libp2p_hole_punching: true
+          request_timeout: 5m
+          log_file: /var/log/infermeshai/infermeshd.log
+          CFG2
+
+          chown root:infermesh /etc/infermeshai/config.yaml
+          chmod 640 /etc/infermeshai/config.yaml
+
+          cat > /etc/systemd/system/infermeshd.service <<'UNIT'
+          [Unit]
+          Description=infermeshAI daemon
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          User=infermesh
+          Group=infermesh
+          WorkingDirectory=/opt/infermeshai
+          ExecStart=/opt/infermeshai/infermeshd-linux-amd64 -config /etc/infermeshai/config.yaml
+          Restart=always
+          RestartSec=3
+          LimitNOFILE=65535
+
+          [Install]
+          WantedBy=multi-user.target
+          UNIT
+
+          systemctl daemon-reload
+          systemctl enable infermeshd
+          systemctl restart infermeshd
+
+Outputs:
+  VpcId:
+    Description: VPC ID used by the stack
+    Value: !If [CreateVpc, !Ref Vpc, !Ref VpcId]
+
+  SubnetId:
+    Description: Subnet ID used by the stack
+    Value: !If [CreateSubnet, !Ref Subnet, !Ref SubnetId]
+
+  KeyName:
+    Description: Key pair name used by the instance
+    Value: !If [CreateKeyPair, !Ref KeyPair, !Ref ExistingKeyName]
+
+  SecurityGroupId:
+    Description: Security group ID for infermesh bootstrap
+    Value: !Ref InfermeshSecurityGroup
+
+  InstanceId:
+    Description: EC2 instance ID
+    Value: !Ref InfermeshInstance
+
+  PublicIp:
+    Description: Public IP of bootstrap node
+    Value: !GetAtt InfermeshInstance.PublicIp
+
+  BootstrapMultiaddrHint:
+    Description: Replace <PEER_ID_FROM_LOG> after reading infermeshd log
+    Value: !Sub /ip4/${InfermeshInstance.PublicIp}/tcp/${Libp2pPort}/p2p/<PEER_ID_FROM_LOG>
+
+  GetPeerIdCommand:
+    Description: SSH command to fetch the first logged peer_id
+    Value: !Sub ssh ec2-user@${InfermeshInstance.PublicIp} "sudo grep -m1 'libp2p node started' /var/log/infermeshai/infermeshd.log"
