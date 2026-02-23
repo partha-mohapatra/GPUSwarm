@@ -1,4 +1,10 @@
 <p align="center">
+  <img src="assets/gpuswarm-hive-256.svg" alt="GPUSwarm Logo" width="180">
+</p>
+
+<h1 align="center">GPUSwarm — Peer-to-Peer AI Inference Mesh</h1>
+
+<p align="center">
   <img src="assets/gpuswarm-hive-wordmark.svg" alt="GPUSwarm — Inference for All. Powered by the Swarm." width="680">
 </p>
 
